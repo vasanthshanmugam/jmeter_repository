@@ -1,0 +1,92 @@
+<path id=”ant.jmeter.classpath”>
+        <fileset dir=” D:\a\1\s ” >
+        <include name=”ant-jmeter-1.1.1.jar”/>
+        </fileset>
+</path>
+
+<target name=”clean”>
+    <delete dir=”results”/>
+    <delete file=”jmeter.log”/>
+    <mkdir dir=”results/jtl”/>
+    <mkdir dir=”results/html”/>
+</target>
+
+<target name=”test” depends=”clean”>
+  <jmeter jmeterhome=”${jmeter.home}” resultlogdir=”results/jtl”>
+        <testplans dir=”${basedir}” includes=”CreateOrder.jmx”/>
+        <property name=”jmeter.save.saveservice.output_format” value=”xml”/>
+        <jvmarg value=”-Xmx1536m”/>
+  </jmeter>
+</target>
+
+<target name=”report” depends=”test”>
+      <xslt basedir=”results/jtl” destdir=”results/html” includes=”*.jtl” style=”${basedir}\jmeter-results-detail-report_21.xsl”/>   
+
+</target>
+<target name=”unit” depends=”test”>
+      <xslt basedir=”results/jtl” destdir=”results/unit” includes=”*.jtl” extension=”.xml” style=”${basedir}\jmeterUnitReport.xsl” />
+</target>
+
+
+– task: Ant@1
+  displayName: Execute JMeter script
+  inputs:
+   buildFile: ‘build – Create_Customer.xml’ 
+   publishJUnitResults: false 
+   javaHomeOption: ‘JDKVersion’ # Options: jDKVersion, path
+
+– task: CmdLine@2
+  displayName: Prepare test results
+  inputs:
+    script: |
+      cd D:\a\1\s\results\html
+      dir
+      powershell -command “\”$(Get-    Content Create_Customer.html)\” > report.html”.
+
+– task: FileContenttoVariable@2
+  displayName: Set test results as variable
+  inputs:
+    FilePath: ‘D:\a\1\s\results\html\report.html’
+    VariableName: ‘html’
+    AddNewlines: false
+
+– task: PublishTestResults@2
+  displayName: Publish JMeter test results
+  inputs:
+    testResultsFormat: ‘JUnit’
+    testResultsFiles: ‘results/unit/Create_Customer.xml’
+    testRunTitle: ‘Create Customer’
+
+
+- task: SendEmail@1
+  inputs:
+    To: 'vasanthtce@gmail.com'
+    From: 'vasanthtce@gmail.com'
+    Subject: 'azure devops test'
+    BodyAsHtml: true
+    AddAttachment: false
+    SmtpServer: ‘mail.churlinoski.mk’
+    SmtpPort: ’25’
+    SmtpUsername: ‘azure-devops@churlinoski.mk’
+    SmtpPassword: ”
+    UseSSL: false
+# Build your Java projects and run tests with Apache Ant.
+# Add steps that save build artifacts and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: Ant@1
+  inputs:
+    workingDirectory: ''
+    buildFile: 'build.xml'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/TEST-*.xml'
